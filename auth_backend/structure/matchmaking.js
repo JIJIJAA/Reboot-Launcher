@@ -14,8 +14,12 @@ express.get("/fortnite/api/matchmaking/session/findPlayer/*", async (req, res) =
 express.get("/fortnite/api/game/v2/matchmakingservice/ticket/player/*", async (req, res) => {
     res.cookie("currentbuildUniqueId", req.query.bucketId.split(":")[0]);
 
+    const rawHost = req.hostname || "127.0.0.1";
+    const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const ipv6 = /^\[?[0-9a-fA-F:]+\]?$/;
+    const backendHost = (ipv4.test(rawHost) || ipv6.test(rawHost)) ? rawHost : "127.0.0.1";
     res.json({
-        "serviceUrl": "ws://127.0.0.1:80",
+        "serviceUrl": `ws://${backendHost}:80`,
         "ticketType": "mms-player",
         "payload": "69=",
         "signature": "420="
