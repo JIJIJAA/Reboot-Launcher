@@ -18,8 +18,6 @@ const String kRebootBelowS20DownloadUrl =
     "https://nightly.link/Milxnor/Project-Reboot-3.0/workflows/msbuild/master/Reboot.zip";
 const String kRebootAboveS20DownloadUrl =
     "https://nightly.link/Milxnor/Project-Reboot-3.0/workflows/msbuild/master/RebootS20.zip";
-const String _kRebootBelowS20FallbackDownloadUrl = kRebootBelowS20DownloadUrl;
-const String _kRebootAboveS20FallbackDownloadUrl = kRebootAboveS20DownloadUrl;
 
 const String kStopBuildDownloadSignal = "kill";
 
@@ -515,7 +513,7 @@ Future<bool> downloadRebootDll(File file, String url, bool aboveS20) async {
     try {
         var response = await http.get(Uri.parse(url));
         if(response.statusCode != 200) {
-            response = await http.get(Uri.parse(aboveS20 ? _kRebootAboveS20FallbackDownloadUrl : _kRebootBelowS20FallbackDownloadUrl));
+            response = await http.get(Uri.parse(aboveS20 ? kRebootAboveS20DownloadUrl : kRebootBelowS20DownloadUrl));
             if(response.statusCode != 200) {
                 throw "status code ${response.statusCode}";
             }
