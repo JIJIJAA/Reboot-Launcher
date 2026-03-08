@@ -18,6 +18,8 @@ const String kRebootBelowS20DownloadUrl =
     "https://nightly.link/Milxnor/Project-Reboot-3.0/workflows/msbuild/master/Reboot.zip";
 const String kRebootAboveS20DownloadUrl =
     "https://nightly.link/Milxnor/Project-Reboot-3.0/workflows/msbuild/master/RebootS20.zip";
+const String _kRebootBelowS20FallbackDownloadUrl = kRebootBelowS20DownloadUrl;
+const String _kRebootAboveS20FallbackDownloadUrl = kRebootAboveS20DownloadUrl;
 
 const String kStopBuildDownloadSignal = "kill";
 
