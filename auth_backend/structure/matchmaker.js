@@ -1,9 +1,12 @@
 const functions = require("./functions.js");
+const { debugLog } = require("./debug.js");
 
 module.exports = async (ws) => {
   const ticketId = functions.MakeID().replace(/-/gi, "");
   const matchId = functions.MakeID().replace(/-/gi, "");
   const sessionId = functions.MakeID().replace(/-/gi, "");
+
+  debugLog("MATCHMAKER", "Client connected", { ticketId, matchId, sessionId });
 
   Connecting();
   Waiting();
@@ -12,6 +15,7 @@ module.exports = async (ws) => {
   Join();
 
   function Connecting() {
+    debugLog("MATCHMAKER", "State: Connecting", { matchId });
     ws.send(
       JSON.stringify({
         payload: {
@@ -23,6 +27,7 @@ module.exports = async (ws) => {
   }
 
   function Waiting() {
+    debugLog("MATCHMAKER", "State: Waiting", { matchId });
     ws.send(
       JSON.stringify({
         payload: {
@@ -36,6 +41,7 @@ module.exports = async (ws) => {
   }
 
   function Queued() {
+    debugLog("MATCHMAKER", "State: Queued", { matchId, ticketId });
     ws.send(
       JSON.stringify({
         payload: {
@@ -51,6 +57,7 @@ module.exports = async (ws) => {
   }
 
   function SessionAssignment() {
+    debugLog("MATCHMAKER", "State: SessionAssignment", { matchId });
     ws.send(
       JSON.stringify({
         payload: {
@@ -63,6 +70,7 @@ module.exports = async (ws) => {
   }
 
   function Join() {
+    debugLog("MATCHMAKER", "State: Join (Play)", { matchId, sessionId });
     ws.send(
       JSON.stringify({
         payload: {

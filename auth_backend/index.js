@@ -4,6 +4,11 @@ const fs = require("fs");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 
+const { debugLog, clearLog } = require("./structure/debug.js");
+
+// Clear the debug log on startup
+clearLog();
+
 const audit = require('express-requests-logger')
 express.use(audit({
     request: {
@@ -13,6 +18,11 @@ express.use(audit({
         maxBodyLength: 150
     }
 }));
+
+express.use((req, res, next) => {
+    debugLog("REQUEST", `${req.method} ${req.url}`, { clientIp: req.ip });
+    next();
+});
 
 express.use(Express.json());
 express.use(Express.urlencoded({ extended: true }));
@@ -37,6 +47,7 @@ express.use(require("./structure/mcp.js"));
 
 const port = 3551;
 express.listen(port, () => {
+    debugLog("SERVER", `LawinServer started listening on port ${port}`);
     console.log("LawinServer started listening on port", port);
 
     require("./structure/xmpp.js");

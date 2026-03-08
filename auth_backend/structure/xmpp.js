@@ -4,10 +4,14 @@ const XMLParser = require("xml-parser");
 
 const functions = require("./../structure/functions.js");
 const matchmaker = require("./matchmaker.js");
+const { debugLog } = require("./debug.js");
 
 const port = 80;
 
-const wss = new WebSocket({ port: port }, () => console.log("XMPP and Matchmaker started listening on port", port));
+const wss = new WebSocket({ port: port }, () => {
+    debugLog("XMPP", `XMPP and Matchmaker started listening on port ${port}`);
+    console.log("XMPP and Matchmaker started listening on port", port);
+});
 wss.on("error", (err) => {
     console.log("XMPP and Matchmaker \x1b[31mFAILED\x1b[0m to start hosting.");
 })
@@ -18,7 +22,12 @@ global.Clients = [];
 wss.on('connection', async (ws) => {
     ws.on('error', () => {});
 
-    if (ws.protocol.toLowerCase() != "xmpp") return matchmaker(ws);
+    if (ws.protocol.toLowerCase() != "xmpp") {
+        debugLog("XMPP", "Matchmaker WebSocket client connected");
+        return matchmaker(ws);
+    }
+
+    debugLog("XMPP", "XMPP client connected");
 
     var accountId = "";
     var jid = "";
@@ -73,6 +82,7 @@ wss.on('connection', async (ws) => {
                 if (decodedBase64 && accountId && decodedBase64.length == 3) {
                     Authenticated = true;
 
+                    debugLog("XMPP", `Client authenticated`, { accountId });
                     console.log(`An xmpp client with the account id ${accountId} has logged in.`);
 
                     ws.send(XMLBuilder.create("success").attribute("xmlns", "urn:ietf:params:xml:ns:xmpp-sasl").toString());
@@ -208,7 +218,9 @@ function RemoveClient(ws) {
     if (global.Clients.find(i => i.client == ws)) {
         updatePresenceForAll(ws, "{}", false, true);
 
-        console.log(`An xmpp client with the account id ${global.Clients.find(i => i.client == ws).accountId} has logged out.`);
+        const accountId = global.Clients.find(i => i.client == ws).accountId;
+        debugLog("XMPP", `Client disconnected`, { accountId });
+        console.log(`An xmpp client with the account id ${accountId} has logged out.`);
 
         global.Clients.splice(global.Clients.findIndex(i => i.client == ws), 1);
     }
