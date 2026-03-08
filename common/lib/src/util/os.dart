@@ -172,6 +172,79 @@ Future<bool> delete(FileSystemEntity file) async {
   }
 }
 
+/// Returns the machine's local network (LAN) IPv4 address, or null if none is found.
+/// Skips loopback and link-local addresses so only a real LAN address is returned.
+Future<String?> getLocalLanIp() async {
+  try {
+    final interfaces = await NetworkInterface.list(
+      type: InternetAddressType.IPv4,
+      includeLinkLocal: false,
+    );
+    for (final interface in interfaces) {
+      for (final addr in interface.addresses) {
+        if (!addr.isLoopback) {
+          return addr.address;
+        }
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+/// Scans the local /24 subnet for a running Reboot backend on [port].
+/// Returns the first host IP found, or null if no host is detected within [timeout].
+Future<String?> scanLanForBackend({int port = 3551, Duration timeout = const Duration(seconds: 3)}) async {
+  final lanIp = await getLocalLanIp();
+  if (lanIp == null) return null;
+
+  final parts = lanIp.split('.');
+  if (parts.length != 4) return null;
+
+  final subnet = '${parts[0]}.${parts[1]}.${parts[2]}';
+  final futures = <Future<String?>>[];
+  for (int i = 1; i <= 254; i++) {
+    final candidate = '$subnet.$i';
+    if (candidate == lanIp) continue;
+    futures.add(_probeBackend(candidate, port, timeout));
+  }
+
+  // Return whichever host responds first
+  final completer = Completer<String?>();
+  var remaining = futures.length;
+  for (final f in futures) {
+    f.then((result) {
+      if (result != null && !completer.isCompleted) {
+        completer.complete(result);
+      } else {
+        remaining--;
+        if (remaining == 0 && !completer.isCompleted) {
+          completer.complete(null);
+        }
+      }
+    }).catchError((_) {
+      remaining--;
+      if (remaining == 0 && !completer.isCompleted) {
+        completer.complete(null);
+      }
+    });
+  }
+
+  return completer.future.timeout(timeout, onTimeout: () => null);
+}
+
+Future<String?> _probeBackend(String host, int port, Duration timeout) async {
+  Socket? socket;
+  try {
+    final probeTimeout = Duration(milliseconds: (timeout.inMilliseconds / 10).clamp(200, 1000).round());
+    socket = await Socket.connect(host, port, timeout: probeTimeout);
+    return host;
+  } catch (_) {
+    return null;
+  } finally {
+    socket?.destroy();
+  }
+}
+
 const _AF_INET = 2;
 const _TCP_TABLE_OWNER_PID_LISTENER = 3;
 

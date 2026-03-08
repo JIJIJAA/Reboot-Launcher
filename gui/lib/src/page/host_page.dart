@@ -5,6 +5,7 @@ import 'package:fluent_ui/fluent_ui.dart' hide FluentIcons;
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:reboot_common/common.dart';
 import 'package:reboot_launcher/main.dart';
 import 'package:reboot_launcher/src/controller/dll_controller.dart';
 import 'package:reboot_launcher/src/controller/hosting_controller.dart';
@@ -289,6 +290,33 @@ class _HostingPageState extends AbstractPageState<HostPage> {
             },
             child: Text(translations.hostShareIpContent),
           )
+      ),
+      SettingTile(
+          icon: Icon(
+              FluentIcons.wifi_1_24_regular
+          ),
+          title: Text(translations.hostShareLanIpName),
+          subtitle: Text(translations.hostShareLanIpDescription),
+          content: Button(
+            onPressed: () async {
+              InfoBarEntry? entry;
+              try {
+                entry = _showCopyingLanIp();
+                final ip = await getLocalLanIp();
+                entry.close();
+                if (ip == null) {
+                  _showCannotCopyLanIp("Could not detect a local network connection. Please check that you are connected to a network.");
+                } else {
+                  FlutterClipboard.controlC(ip);
+                  _showCopiedLanIp();
+                }
+              } catch(error) {
+                entry?.close();
+                _showCannotCopyLanIp(error.toString());
+              }
+            },
+            child: Text(translations.hostShareLanIpContent),
+          )
       )
     ],
   );
@@ -335,6 +363,23 @@ class _HostingPageState extends AbstractPageState<HostPage> {
 
   void _showCannotCopyIp(Object error) => showRebootInfoBar(
       translations.hostShareIpMessageError(error.toString()),
+      severity: InfoBarSeverity.error,
+      duration: infoBarLongDuration
+  );
+
+  InfoBarEntry _showCopyingLanIp() => showRebootInfoBar(
+      translations.hostShareLanIpMessageLoading,
+      loading: true,
+      duration: null
+  );
+
+  void _showCopiedLanIp() => showRebootInfoBar(
+      translations.hostShareLanIpMessageSuccess,
+      severity: InfoBarSeverity.success
+  );
+
+  void _showCannotCopyLanIp(String error) => showRebootInfoBar(
+      translations.hostShareLanIpMessageError(error),
       severity: InfoBarSeverity.error,
       duration: infoBarLongDuration
   );
