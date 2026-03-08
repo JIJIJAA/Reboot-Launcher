@@ -2,9 +2,14 @@ const Express = require("express");
 const express = Express.Router();
 const fs = require("fs");
 const path = require("path");
+const net = require("net");
 const iniparser = require("ini");
-const config = iniparser.parse(fs.readFileSync(path.join(__dirname, "..", "Config", "config.ini")).toString());
 const functions = require("./functions.js");
+const { debugLog } = require("./debug.js");
+
+function getConfig() {
+    return iniparser.parse(fs.readFileSync(path.join(__dirname, "..", "Config", "config.ini")).toString());
+}
 
 express.get("/fortnite/api/matchmaking/session/findPlayer/*", async (req, res) => {
     res.status(200);
@@ -14,8 +19,18 @@ express.get("/fortnite/api/matchmaking/session/findPlayer/*", async (req, res) =
 express.get("/fortnite/api/game/v2/matchmakingservice/ticket/player/*", async (req, res) => {
     res.cookie("currentbuildUniqueId", req.query.bucketId.split(":")[0]);
 
+    const hostname = req.hostname;
+    const serviceHost = net.isIP(hostname) ? hostname : "127.0.0.1";
+    const serviceUrl = `ws://${serviceHost}:80`;
+
+    debugLog("MATCHMAKING", "Ticket request", {
+        clientIp: req.ip,
+        hostname: hostname,
+        serviceUrl: serviceUrl
+    });
+
     res.json({
-        "serviceUrl": "ws://127.0.0.1:80",
+        "serviceUrl": serviceUrl,
         "ticketType": "mms-player",
         "payload": "69=",
         "signature": "420="
@@ -32,6 +47,15 @@ express.get("/fortnite/api/game/v2/matchmaking/account/:accountId/session/:sessi
 })
 
 express.get("/fortnite/api/matchmaking/session/:session_id", async (req, res) => {
+    const config = getConfig();
+
+    debugLog("MATCHMAKING", "Session request", {
+        clientIp: req.ip,
+        sessionId: req.params.session_id,
+        serverAddress: config.GameServer.ip,
+        serverPort: config.GameServer.port
+    });
+
     res.json({
         "id": req.params.session_id,
         "ownerId": functions.MakeID().replace(/-/ig, "").toUpperCase(),
