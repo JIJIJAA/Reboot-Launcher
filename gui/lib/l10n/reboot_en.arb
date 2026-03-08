@@ -384,5 +384,17 @@
   "downloadManually": "Download manually",
   "gameServerPortEqualsBackendPort": "The game server port cannot be {backendPort} as its reserved for the backend",
   "gameServer": "game server",
-  "client": "client"
+  "client": "client",
+  "hostShareLanIpName": "LAN IP",
+  "hostShareLanIpDescription": "Copies your local network IP to the clipboard. Share this with players on the same Wi-Fi or network.",
+  "hostShareLanIpContent": "Copy LAN IP",
+  "hostShareLanIpMessageLoading": "Detecting your LAN IP...",
+  "hostShareLanIpMessageSuccess": "Copied LAN IP to the clipboard",
+  "hostShareLanIpMessageError": "Could not detect LAN IP: {error}",
+  "backendScanLanName": "Scan LAN for host",
+  "backendScanLanDescription": "Automatically searches your local network for a running Reboot host and sets the backend address.",
+  "backendScanLanContent": "Scan",
+  "backendScanLanMessageLoading": "Scanning local network for a Reboot host...",
+  "backendScanLanMessageSuccess": "Found host at {host} — backend configured automatically!",
+  "backendScanLanMessageError": "No Reboot host found on the local network."
 }

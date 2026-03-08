@@ -73,6 +73,7 @@ class _BackendPageState extends AbstractPageState<BackendPage> {
     _unrealEngineConsoleKey,
     _detached,
     _installationDirectory,
+    _scanLan,
     _resetDefaults
   ];
 
@@ -209,6 +210,58 @@ class _BackendPageState extends AbstractPageState<BackendPage> {
         child: Text(translations.backendResetDefaultsContent),
       )
   );
+
+  Widget get _scanLan => Obx(() {
+    if(_backendController.type.value == AuthBackendType.embedded) {
+      return const SizedBox.shrink();
+    }
+
+    return SettingTile(
+        icon: Icon(
+            FluentIcons.wifi_1_24_regular
+        ),
+        title: Text(translations.backendScanLanName),
+        subtitle: Text(translations.backendScanLanDescription),
+        content: Button(
+            onPressed: _performLanScan,
+            child: Text(translations.backendScanLanContent)
+        )
+    );
+  });
+
+  Future<void> _performLanScan() async {
+    final entry = showRebootInfoBar(
+        translations.backendScanLanMessageLoading,
+        loading: true,
+        duration: null
+    );
+    try {
+      final host = await scanLanForBackend();
+      entry.close();
+      if (host != null) {
+        _backendController.host.text = host;
+        _backendController.type.value = AuthBackendType.remote;
+        showRebootInfoBar(
+            translations.backendScanLanMessageSuccess(host),
+            severity: InfoBarSeverity.success,
+            duration: infoBarLongDuration
+        );
+      } else {
+        showRebootInfoBar(
+            translations.backendScanLanMessageError,
+            severity: InfoBarSeverity.warning,
+            duration: infoBarLongDuration
+        );
+      }
+    } catch (error) {
+      entry.close();
+      showRebootInfoBar(
+          translations.backendScanLanMessageError,
+          severity: InfoBarSeverity.warning,
+          duration: infoBarLongDuration
+      );
+    }
+  }
 
   Widget get _installationDirectory => Obx(() {
     if(_backendController.type.value != AuthBackendType.embedded) {
