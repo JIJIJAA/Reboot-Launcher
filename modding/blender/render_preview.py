@@ -34,13 +34,13 @@ def setup_world():
 
 def setup_lights():
     key = bpy.data.objects.new("Key", bpy.data.lights.new("Key", type="AREA"))
-    key.data.energy = 900
+    key.data.energy = 220
     key.data.size = 4
     key.location = (4.0, -3.0, 3.4)
     bpy.context.scene.collection.objects.link(key)
 
     fill = bpy.data.objects.new("Fill", bpy.data.lights.new("Fill", type="AREA"))
-    fill.data.energy = 320
+    fill.data.energy = 70
     fill.data.size = 6
     fill.location = (-3.5, -2.5, 2.0)
     bpy.context.scene.collection.objects.link(fill)
@@ -78,6 +78,9 @@ def setup_render():
     scene.cycles.use_denoising = True
     scene.render.resolution_x, scene.render.resolution_y = RESOLUTION
     scene.render.film_transparent = False
+    # Without toning this down the saturated yellows blow out to cream and the
+    # preview lies about the palette.
+    scene.view_settings.view_transform = "Standard"
     scene.render.image_settings.file_format = "PNG"
 
 

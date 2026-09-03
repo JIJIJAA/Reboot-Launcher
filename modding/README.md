@@ -120,8 +120,12 @@ None of this runs on Linux or without the game files:
 
 Done:
 
-- Rigged blockout generator with a verified FBX round-trip (68 bones, 6 material slots, 180cm)
-- CPU-only preview renderer
+- Rigged blockout generator with a verified FBX round-trip (68 bones, 7 material slots, ~180cm)
+- Silhouette and palette matched against reference art: vivid yellow rather
+  than pastel, orange confined to the feet and beak, segmented ball joints,
+  black brows and neck joint, forward-swept head feathers
+- CPU-only preview renderer (exposure matters - an over-lit preview washes
+  saturated yellow to cream and misleads the palette work)
 - `AthenaCharacter:CID_Custom_ToyChica` registered in both profiles
 
 Not done, and blocked without a Windows machine plus the game files:

@@ -164,16 +164,21 @@ BONES = _CORE_BONES + _twist_bones() + _finger_bones() + _ik_bones()
 # material slots of the skeletal mesh, so the names are what an artist will
 # later bind real materials to. Keep the order stable: slot indices are
 # referenced by the geometry below.
+# Colours sampled from the reference the project is working against: the
+# yellow is vivid rather than pastel, and the feet are a distinctly redder
+# orange than the beak reads at first glance.
 MATERIALS = [
-    ("M_ToyChica_Body",    (0.98, 0.83, 0.22, 1.0)),  # 0 yellow plastic
-    ("M_ToyChica_Beak",    (0.96, 0.55, 0.13, 1.0)),  # 1 orange beak + feet
-    ("M_ToyChica_Bib",     (0.95, 0.95, 0.93, 1.0)),  # 2 white "LET'S PARTY" bib
-    ("M_ToyChica_Briefs",  (0.93, 0.36, 0.62, 1.0)),  # 3 pink briefs + cheeks
+    ("M_ToyChica_Body",    (1.00, 0.80, 0.10, 1.0)),  # 0 vivid yellow plastic
+    ("M_ToyChica_Beak",    (1.00, 0.45, 0.10, 1.0)),  # 1 orange beak + feet
+    ("M_ToyChica_Bib",     (0.97, 0.97, 0.95, 1.0)),  # 2 white "LET'S PARTY" bib
+    ("M_ToyChica_Briefs",  (1.00, 0.22, 0.58, 1.0)),  # 3 hot pink briefs + cheeks
     ("M_ToyChica_EyeWhite",(1.00, 1.00, 1.00, 1.0)),  # 4 sclera
-    ("M_ToyChica_EyeIris", (0.16, 0.44, 0.85, 1.0)),  # 5 blue iris
+    ("M_ToyChica_EyeIris", (0.06, 0.06, 0.08, 1.0)),  # 5 dark iris
+    ("M_ToyChica_Trim",    (0.03, 0.03, 0.04, 1.0)),  # 6 brows + neck joint
 ]
 
-MAT_BODY, MAT_BEAK, MAT_BIB, MAT_BRIEFS, MAT_EYE_W, MAT_EYE_I = range(6)
+(MAT_BODY, MAT_BEAK, MAT_BIB, MAT_BRIEFS,
+ MAT_EYE_W, MAT_EYE_I, MAT_TRIM) = range(7)
 
 
 def clear_scene():
@@ -291,67 +296,89 @@ def build_character_mesh():
     # --- Head ------------------------------------------------------------
     # Toy Chica's head is a rounded plastic shell. Kept deliberately close to
     # mannequin head size: an oversized head clips through Fortnite emotes.
-    part("head", add_sphere(bm, (0, 0, 161), 14.5, MAT_BODY, scale=(1.0, 1.05, 1.0)))
+    part("head", add_sphere(bm, (0, 0, 162), 14.0, MAT_BODY, scale=(1.0, 1.05, 1.0)))
 
-    # Beak. Two wedges, upper and lower, pushed forward along +X. It has to
-    # over-protrude to read at all from the front, which is the angle players
-    # see most in the lobby.
-    part("head", add_box(bm, (13, 0, 158.5), (16, 15, 6), MAT_BEAK))
-    part("head", add_box(bm, (12, 0, 153), (14, 13, 4), MAT_BEAK))
+    # The black segmented joint between head and torso. Small, but it is what
+    # makes the character read as an animatronic rather than a mascot suit.
+    part("neck_01", add_capsule(bm, (0, 0, 145), (0, 0, 152), 4.5, MAT_TRIM))
 
-    # Eyes: sclera plus iris, set wide and high like the Toy models.
+    # Beak. Two wedges, upper and lower, pushed forward along +X. Sized to
+    # protrude clearly in silhouette without turning into a toucan.
+    part("head", add_box(bm, (12, 0, 159), (13, 12, 5), MAT_BEAK))
+    part("head", add_box(bm, (11, 0, 154.5), (11, 10, 3), MAT_BEAK))
+
     for side in (1, -1):
-        part("head", add_sphere(bm, (8, 6 * side, 166), 5.0, MAT_EYE_W, rings=8))
-        part("head", add_sphere(bm, (12, 6 * side, 166), 2.4, MAT_EYE_I, rings=6))
+        # Eyes: sclera plus a dark iris, set wide and high like the Toy models.
+        part("head", add_sphere(bm, (7, 6.5 * side, 166), 6.4, MAT_EYE_W, rings=8))
+        part("head", add_sphere(bm, (12, 6.5 * side, 166), 3.2, MAT_EYE_I, rings=6))
+        # Heavy black brows sitting right on top of the eyes.
+        part("head", add_box(bm, (9, 6.5 * side, 173), (8, 11, 1.8), MAT_TRIM,
+                             rotation=(0, math.radians(-14), 0)))
         # Rosy cheeks, the most recognisable Toy-series detail. Pushed wide so
         # they stay visible in silhouette instead of hiding behind the beak.
-        part("head", add_sphere(bm, (7, 12 * side, 156), 3.6, MAT_BRIEFS,
+        part("head", add_sphere(bm, (7, 12 * side, 157), 3.8, MAT_BRIEFS,
                                 scale=(0.6, 1.0, 1.0), rings=6))
 
-    # Three head feathers, fanned backwards.
-    for index, offset in enumerate((-6, 0, 6)):
-        part("head", add_cone(bm, (-2, offset, 176), 12, 3.0, MAT_BEAK,
-                              rotation=(math.radians(-18), 0, 0)))
+    # Head feathers. They sweep FORWARD over the brow like a quiff, not
+    # backwards - getting this the wrong way round reads as a cockatoo.
+    for offset, length in ((-5.5, 17), (0, 22), (5.5, 17)):
+        part("head", add_cone(bm, (1, offset, 178), length, 3.8, MAT_BODY,
+                              rotation=(0, math.radians(52), 0)))
 
     # --- Torso -----------------------------------------------------------
     # Overlapping spheres rather than stacked ones: two tangent spheres read
     # as a snowman, which is the classic blockout failure for round characters.
+    # The reference has a clear hourglass, so the waist is deliberately
+    # narrower than both the chest and the hips.
     part("spine_03", add_sphere(bm, (0, 0, 137), 15.5, MAT_BODY,
-                                scale=(0.82, 1.0, 0.92)))
-    part("spine_02", add_sphere(bm, (0, 0, 126), 15.0, MAT_BODY,
-                                scale=(0.85, 1.05, 0.95)))
-    # Toy Chica's rounded belly sits low and slightly forward.
-    part("spine_01", add_sphere(bm, (1.5, 0, 114), 14.5, MAT_BODY,
-                                scale=(0.88, 1.02, 1.0)))
+                                scale=(0.82, 1.05, 0.90)))
+    part("spine_02", add_sphere(bm, (0, 0, 123), 12.5, MAT_BODY,
+                                scale=(0.90, 1.00, 1.00)))
+    part("spine_01", add_sphere(bm, (0, 0, 110), 14.0, MAT_BODY,
+                                scale=(0.88, 1.08, 0.95)))
+    part("pelvis", add_sphere(bm, (0, 0, 99), 16.0, MAT_BODY,
+                              scale=(0.85, 1.15, 0.85)))
 
-    # The bib. A flat slab on the chest; the "LET'S PARTY!" text belongs in
-    # the texture, not the geometry.
-    part("spine_02", add_box(bm, (11, 0, 130), (3, 23, 26), MAT_BIB))
+    # The bib. A flat slab on the chest; the "LET'S PARTY!" text and confetti
+    # belong in the texture, not the geometry.
+    part("spine_03", add_box(bm, (11, 0, 134), (3, 24, 20), MAT_BIB))
 
-    # Pink briefs at the hips.
-    part("pelvis", add_box(bm, (0, 0, 99), (19, 22, 13), MAT_BRIEFS))
+    # Pink briefs, sitting on the hips rather than the waist.
+    part("pelvis", add_sphere(bm, (0, 0, 98), 16.5, MAT_BRIEFS,
+                              scale=(0.86, 1.16, 0.55)))
 
     # --- Arms ------------------------------------------------------------
     for side, suffix in ((1, "l"), (-1, "r")):
+        # Segmented limbs with visible ball joints: the single detail that
+        # separates an animatronic silhouette from a plain cartoon limb.
         part(f"upperarm_{suffix}",
-             add_capsule(bm, (0, 16 * side, 141), (0, 42 * side, 141), 5.5, MAT_BODY))
+             add_sphere(bm, (0, 17 * side, 141), 6.8, MAT_BODY, rings=6))
+        part(f"upperarm_{suffix}",
+             add_capsule(bm, (0, 20 * side, 141), (0, 40 * side, 141), 5.5, MAT_BODY))
         part(f"lowerarm_{suffix}",
-             add_capsule(bm, (0, 42 * side, 141), (0, 66 * side, 141), 4.6, MAT_BODY))
-        # Four-fingered mitts, in keeping with the animatronic look.
+             add_sphere(bm, (0, 42 * side, 141), 5.6, MAT_BODY, rings=6))
+        part(f"lowerarm_{suffix}",
+             add_capsule(bm, (0, 45 * side, 141), (0, 64 * side, 141), 4.4, MAT_BODY))
+        # Tapered mitts. The finger bones exist in the skeleton; the proxy
+        # mesh does not bother modelling them.
         part(f"hand_{suffix}",
-             add_box(bm, (0, 72 * side, 141), (5, 12, 9), MAT_BODY))
+             add_cone(bm, (0, 70 * side, 141), 14, 4.6, MAT_BODY,
+                      rotation=(math.radians(90 * -side), 0, 0)))
 
     # --- Legs ------------------------------------------------------------
     for side, suffix in ((1, "l"), (-1, "r")):
         part(f"thigh_{suffix}",
-             add_capsule(bm, (0, 9 * side, 95), (0, 9 * side, 53), 8.0, MAT_BODY))
+             add_capsule(bm, (0, 9 * side, 95), (0, 9 * side, 56), 8.5, MAT_BODY))
+        # Knee joint.
         part(f"calf_{suffix}",
-             add_capsule(bm, (0, 9 * side, 53), (0, 9 * side, 12), 6.0, MAT_BEAK))
-        # Three-toed bird feet.
-        part(f"foot_{suffix}", add_box(bm, (5, 9 * side, 5), (22, 12, 7), MAT_BEAK))
-        for toe in (-4.5, 0, 4.5):
+             add_sphere(bm, (0, 9 * side, 53), 6.8, MAT_BODY, rings=6))
+        part(f"calf_{suffix}",
+             add_capsule(bm, (0, 9 * side, 50), (0, 9 * side, 12), 6.0, MAT_BODY))
+        # Three-toed bird feet, the only orange on the lower body.
+        part(f"foot_{suffix}", add_box(bm, (5, 9 * side, 5), (22, 13, 8), MAT_BEAK))
+        for toe in (-4.8, 0, 4.8):
             part(f"ball_{suffix}",
-                 add_cone(bm, (17, 9 * side + toe, 4), 9, 2.2, MAT_BEAK,
+                 add_cone(bm, (17, 9 * side + toe, 4), 10, 2.4, MAT_BEAK,
                           rotation=(0, math.radians(90), 0)))
 
     # Finalise into a real mesh datablock.
