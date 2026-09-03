@@ -2,7 +2,7 @@
   "_id": "LawinServer",
   "created": "0001-01-01T00:00:00.000Z",
   "updated": "0001-01-01T00:00:00.000Z",
-  "rvn": 23,
+  "rvn": 24,
   "wipeNumber": 1,
   "accountId": "LawinServer",
   "profileId": "athena",
@@ -135102,6 +135102,18 @@
         "completion_athena_daily_kill_players_sniper_v2": 0
       },
       "quantity": 1
+    },
+    "AthenaCharacter:CID_Custom_ToyChica": {
+      "templateId": "AthenaCharacter:CID_Custom_ToyChica",
+      "attributes": {
+        "max_level_bonus": 0,
+        "level": 1,
+        "item_seen": true,
+        "xp": 0,
+        "variants": [],
+        "favorite": false
+      },
+      "quantity": 1
     }
   },
   "stats": {
@@ -135172,5 +135184,5 @@
       ]
     }
   },
-  "commandRevision": 22
+  "commandRevision": 23
 }
