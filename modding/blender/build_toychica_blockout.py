@@ -44,10 +44,12 @@ ARMATURE_NAME = "Armature"
 # this hierarchy, so matching the names exactly is what makes retargeting work.
 # Coordinates are (X forward, Y right, Z up) in centimetres.
 #
-# Fingers are intentionally omitted: a blockout does not need them, and adding
-# them wrong is worse than leaving them out. Add the full finger chain before
-# shipping a real skin or the character will not grip weapons correctly.
-BONES = [
+# The core chain below is hand-written; twist, finger and IK bones are
+# generated further down because they are formulaic and long. The mesh does
+# not have to use all of them - the blockout's hands are mitts weighted to
+# hand_l/hand_r - but the SKELETON must carry them or Fortnite's animations
+# and weapon sockets have nothing to bind to.
+_CORE_BONES = [
     # name,          parent,        head (x, y, z),      tail (x, y, z)
     ("root",         None,          (0, 0, 0),           (0, 0, 10)),
     ("pelvis",       "root",        (0, 0, 97),          (0, 0, 105)),
@@ -77,6 +79,83 @@ BONES = [
     ("foot_r",       "calf_r",      (0, -9, 12),         (10, -9, 3)),
     ("ball_r",       "foot_r",      (10, -9, 3),         (18, -9, 2)),
 ]
+
+
+def _twist_bones():
+    """Twist bones distribute forearm/thigh rotation so limbs do not candy-wrap.
+
+    Fortnite's animations drive these, so a skeleton without them deforms
+    badly on any emote that rotates the wrist or knee.
+    """
+    bones = []
+    for side in (1, -1):
+        suffix = "l" if side > 0 else "r"
+        bones += [
+            (f"upperarm_twist_01_{suffix}", f"upperarm_{suffix}",
+             (0, 29 * side, 141), (0, 35 * side, 141)),
+            (f"lowerarm_twist_01_{suffix}", f"lowerarm_{suffix}",
+             (0, 54 * side, 141), (0, 60 * side, 141)),
+            (f"thigh_twist_01_{suffix}", f"thigh_{suffix}",
+             (0, 9 * side, 74), (0, 9 * side, 68)),
+            (f"calf_twist_01_{suffix}", f"calf_{suffix}",
+             (0, 9 * side, 32), (0, 9 * side, 26)),
+        ]
+    return bones
+
+
+# Finger spread across the palm. In this T-pose the arms run along +/-Y, so
+# fingers extend along Y and fan out along X. The thumb also drops in Z.
+_FINGERS = [
+    # name,    x offset, z offset, start y, joint lengths
+    ("thumb",     4.5,  -1.5, 70, (4.5, 3.5, 3.0)),
+    ("index",     3.5,   0.0, 77, (4.5, 3.0, 2.5)),
+    ("middle",    1.2,   0.0, 77, (4.8, 3.2, 2.6)),
+    ("ring",     -1.2,   0.0, 77, (4.4, 3.0, 2.4)),
+    ("pinky",    -3.5,   0.0, 77, (3.8, 2.6, 2.2)),
+]
+
+
+def _finger_bones():
+    """The five three-joint chains UE4 expects on each hand.
+
+    Weapons are held via sockets on these bones. A mesh with mitts is fine;
+    a skeleton without the chains is not.
+    """
+    bones = []
+    for side in (1, -1):
+        suffix = "l" if side > 0 else "r"
+        for name, x_offset, z_offset, start_y, lengths in _FINGERS:
+            parent = f"hand_{suffix}"
+            cursor = start_y
+            for index, length in enumerate(lengths, start=1):
+                bone = f"{name}_0{index}_{suffix}"
+                head = (x_offset, cursor * side, 141 + z_offset)
+                cursor += length
+                tail = (x_offset, cursor * side, 141 + z_offset)
+                bones.append((bone, parent, head, tail))
+                parent = bone
+    return bones
+
+
+def _ik_bones():
+    """Animation-only helper bones. They deform nothing but must exist.
+
+    Unreal's retargeting and the weapon-aiming rig both reference these by
+    name; a missing ik_hand_gun in particular breaks weapon poses.
+    """
+    return [
+        ("ik_foot_root", "root",         (0, 0, 0),      (10, 0, 0)),
+        ("ik_foot_l",    "ik_foot_root", (0, 9, 12),     (10, 9, 12)),
+        ("ik_foot_r",    "ik_foot_root", (0, -9, 12),    (10, -9, 12)),
+        ("ik_hand_root", "root",         (0, 0, 0),      (10, 0, 0)),
+        # ik_hand_gun follows the right hand; both ik_hand_l/r hang off it.
+        ("ik_hand_gun",  "ik_hand_root", (0, -78, 141),  (10, -78, 141)),
+        ("ik_hand_l",    "ik_hand_gun",  (0, 78, 141),   (10, 78, 141)),
+        ("ik_hand_r",    "ik_hand_gun",  (0, -78, 141),  (10, -78, 141)),
+    ]
+
+
+BONES = _CORE_BONES + _twist_bones() + _finger_bones() + _ik_bones()
 
 # ---------------------------------------------------------------------------
 # Materials
@@ -347,7 +426,10 @@ def export(armature, mesh_obj):
         use_selection=True,
         apply_scale_options="FBX_SCALE_NONE",
         object_types={"ARMATURE", "MESH"},
-        use_armature_deform_only=True,
+        # Export every bone, not just weighted ones. IK and finger bones carry
+        # no weights, and filtering by "deform" would silently drop them - the
+        # skeleton has to be complete even where the blockout mesh is not.
+        use_armature_deform_only=False,
         add_leaf_bones=False,
         primary_bone_axis="Y",
         secondary_bone_axis="X",

@@ -89,9 +89,16 @@ root > pelvis > spine_01..03 > neck_01 > head
        pelvis > thigh_l/r > calf > foot > ball
 ```
 
-The blockout generator emits exactly these 23 bones. **It omits the finger
-chain** — fine for a proxy, not fine for a shipping skin, since weapons are
-gripped via finger sockets. Add the full hand hierarchy before real art.
+The generator emits 68 bones: that core chain plus the twist bones
+(`upperarm_twist_01_*`, `calf_twist_01_*`…), the five three-joint finger
+chains per hand, and the animation-only IK bones (`ik_foot_root`,
+`ik_hand_gun`…). The blockout mesh only weights 19 of them — its hands are
+mitts — but the skeleton has to carry the rest or Fortnite's animations and
+weapon sockets have nothing to bind to.
+
+These names come from the stock UE4 mannequin. They are the right shape, but
+they are **not verified against a real Fortnite skeleton** — extract one from
+the target build with FModel and diff it before doing real art.
 
 Scale and orientation matter as much as names: characters are ~180cm, forward
 is +X, up is +Z. The FBX exporter flags in `build_toychica_blockout.py`
@@ -113,12 +120,13 @@ None of this runs on Linux or without the game files:
 
 Done:
 
-- Rigged blockout generator with a verified FBX round-trip (23 bones, 6 material slots, 180cm)
+- Rigged blockout generator with a verified FBX round-trip (68 bones, 6 material slots, 180cm)
 - CPU-only preview renderer
 - `AthenaCharacter:CID_Custom_ToyChica` registered in both profiles
 
 Not done, and blocked without a Windows machine plus the game files:
 
+- Verifying the skeleton against a real build's `Skeleton_Character` asset
 - Cooking the item definition and character parts
 - Packing and mounting a custom pak
 - The launcher's modding mode for pak signature failures
